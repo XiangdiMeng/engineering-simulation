@@ -1,0 +1,30 @@
+# 核心依赖
+numpy>=1.24.0
+scipy>=1.10.0
+matplotlib>=3.7.0
+
+# 可选依赖
+pandas>=2.0.0              # 数据处理
+sympy>=1.12                # 符号计算
+networkx>=3.1              # 图论（结构拓扑）
+
+# 可视化
+plotly>=5.14.0             # 交互式图表
+seaborn>=0.12.0            # 统计图表
+
+# 有限元分析（可选）
+# fenics-dolfin>=2019.1.0  # FEniCS（需要单独安装）
+# sfepy>=2023.1             # SfePy
+
+# 优化
+scipy>=1.10.0              # 包含优化模块
+# pyomo>=6.6.0              # 优化建模
+
+# Jupyter 支持
+jupyter>=1.0.0
+ipykernel>=6.25.0
+
+# 开发工具
+pytest>=7.4.0
+black>=23.7.0
+flake8>=6.1.0
