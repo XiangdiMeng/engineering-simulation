@@ -89,7 +89,7 @@ def draw_frame(ax, frame_idx):
 
     # 悬臂（简化为直线，加上位移）
     arm_x = np.linspace(0, 1.2, 20) + disp * (np.arange(20) / 19) * 0.2
-    arm_y = np.linspace(3.05, 3.05, 20)
+    arm_y = np.linspace(0, 3.05, 20)  # 从地面到篮板高度
     ax.plot(arm_x, arm_y, 'orange', linewidth=8)
 
     # 篮板位置（随位移变化）
@@ -135,7 +135,7 @@ ax2.set_xlabel('Time (s)')
 ax2.set_ylabel('Impact Force (kN)')
 ax2.set_title('Impact Force vs Time')
 ax2.grid(True, alpha=0.3)
-time_line2, = ax2.plot([], [], 'bo', color='blue', markersize=8)
+time_line2, = ax2.plot([], [], 'o', color='blue', markersize=8)
 
 # 位移时程图 - 左下
 ax3 = axes[1, 0]
@@ -146,7 +146,7 @@ ax3.set_xlabel('Time (s)')
 ax3.set_ylabel('Displacement (mm)')
 ax3.set_title('Rim Displacement Response')
 ax3.grid(True, alpha=0.3)
-time_line3, = ax3.plot([], [], 'bo', color='blue', markersize=8)
+time_line3, = ax3.plot([], [], 'o', color='blue', markersize=8)
 
 # 相位图 - 右下
 ax4 = axes[1, 1]
