@@ -5,10 +5,11 @@
 import unittest
 import numpy as np
 import sys
-sys.path.insert(0, '../src')
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
-from beam_analysis import SimplySupportedBeam, CantileverBeam, PointLoad
-from materials import Steel
+from src.beam_analysis import SimplySupportedBeam, CantileverBeam, PointLoad
+from src.materials import Steel
 
 
 class TestSimplySupportedBeam(unittest.TestCase):
@@ -118,9 +119,11 @@ class TestCantileverBeam(unittest.TestCase):
         self.beam.add_point_load(force=P, position=L)
         results = self.beam.analyze()
 
-        # 固定端弯矩 = P * L
+        # 固定端弯矩 = P * L = 30000 N·m
         expected_M = P * L
 
+        # 解析解，允许5%误差
+        self.assertGreater(results.max_moment, 0)
         self.assertAlmostEqual(results.max_moment, expected_M, delta=expected_M * 0.05)
 
     def test_tip_load_deflection(self):
@@ -165,7 +168,7 @@ class TestBeamResults(unittest.TestCase):
         shear = np.zeros(10)
         stress = np.zeros(10)
 
-        from beam_analysis import BeamResults
+        from src.beam_analysis import BeamResults
         results = BeamResults(
             x=x,
             deflection=deflection,

@@ -47,7 +47,7 @@ print()
 # ============================================
 # 2. 材料属性
 # ============================================
-from materials import Concrete
+from src.materials import Concrete
 
 concrete = Concrete(CONCRETE_GRADE)
 
@@ -73,7 +73,7 @@ print()
 # ============================================
 # 3. 悬挑板分析 (简化为悬臂梁)
 # ============================================
-from beam_analysis import CantileverBeam
+from src.beam_analysis import CantileverBeam
 
 print("【分析 1: 悬挑板强度分析】")
 print("-"*50)
@@ -159,7 +159,7 @@ print()
 # ============================================
 # 4. 栏杆立柱稳定性分析
 # ============================================
-from stability import euler_buckling_analysis, ColumnSection, BoundaryCondition
+from src.stability import euler_buckling_analysis, ColumnSection, BoundaryCondition
 
 print("【分析 2: 栏杆立柱稳定性分析】")
 print("-"*50)
@@ -186,7 +186,7 @@ wind_load = WIND_LOAD * RAILING_HEIGHT * column_spacing * 1000
 total_h_load = h_load + wind_load
 
 buckling_result = euler_buckling_analysis(
-    length=RAILING_COLUMN_HEIGHT,
+    length=RAILING_HEIGHT,
     material=steel_rebar,
     section=section_column,
     applied_load=total_h_load,
@@ -195,7 +195,7 @@ buckling_result = euler_buckling_analysis(
 
 print(f"立柱参数:")
 print(f"  截面: 50mm x 50mm x 3mm 方钢管")
-print(f"  高度: {RAILING_COLUMN_HEIGHT} m")
+print(f"  高度: {RAILING_HEIGHT} m")
 print(f"  间距: {column_spacing} m")
 print()
 

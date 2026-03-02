@@ -4,7 +4,8 @@ Bridge Vehicle Vibration Analysis - Simplified
 """
 
 import sys
-sys.path.insert(0, 'src')
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -235,7 +236,10 @@ Recommendations:
 ax1g.text(0, 1, summary_text, fontsize=11, family='monospace',
          verticalalignment='top')
 
-plt.tight_layout()
+try:
+    plt.tight_layout()
+except UserWarning:
+    pass
 plt.savefig('results/bridge_comprehensive.png', dpi=150, bbox_inches='tight')
 print("  [SAVED] results/bridge_comprehensive.png")
 plt.close()

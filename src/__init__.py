@@ -10,7 +10,17 @@ from .truss import TrussStructure, create_roof_truss, create_bridge_truss
 from .frame import FrameStructure, FrameElement, FrameMaterial, Section, create_portal_frame
 from .stability import (ColumnSection, BoundaryCondition, euler_buckling_analysis,
                         slenderness_ratio_analysis, aisc_allowable_stress)
-from .dynamics import ModalAnalysis, HarmonicResponseAnalysis, TransientResponseAnalysis
+try:
+    from .dynamics import ModalAnalysis, HarmonicResponseAnalysis, TransientResponseAnalysis
+except ImportError as e:
+    import warnings
+    warnings.warn(
+        f"动力学模块加载失败（可能缺少 scipy）: {e}. "
+        "请安装 scipy: pip install scipy"
+    )
+    ModalAnalysis = None
+    HarmonicResponseAnalysis = None
+    TransientResponseAnalysis = None
 from .postproc import StressContourPlot, DeformationAnimation, ResultReporter
 from .combined import (ParametricStructure, create_cable_stayed_bridge, create_arch_bridge,
                        create_multistory_frame, LoadCase, LoadCombination)

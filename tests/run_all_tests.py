@@ -6,8 +6,8 @@ import unittest
 import sys
 import os
 
-# 添加src到Python路径
-src_path = os.path.join(os.path.dirname(__file__), '..', 'src')
+# 添加项目根目录到Python路径
+src_path = os.path.join(os.path.dirname(__file__), '..')
 sys.path.insert(0, src_path)
 
 # 导入所有测试模块

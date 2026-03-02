@@ -121,7 +121,7 @@ class SimplySupportedBeam:
         return self
 
     def analyze(self, n_points: int = 100) -> BeamResults:
-        """分析梁的受力和变形"""
+        """分析梁的受力和变形（解析解）"""
         x = np.linspace(0, self.length, n_points)
 
         # 初始化数组
@@ -132,58 +132,63 @@ class SimplySupportedBeam:
 
         E = self.material.elastic_modulus
         I = self.I
+        L = self.length
 
         # 计算支座反力
-        R_left = 0
-        R_right = 0
+        R_left = 0.0
+        R_right = 0.0
 
         # 集中载荷
         for load in self.point_loads:
-            R_left += load.force * (self.length - load.position) / self.length
-            R_right += load.force * load.position / self.length
+            R_left += load.force * (L - load.position) / L
+            R_right += load.force * load.position / L
 
         # 分布载荷
         for load in self.distributed_loads:
-            L = load.end - load.start
+            w_len = load.end - load.start
             center = (load.start + load.end) / 2
-            R_left += load.magnitude * L * (self.length - center) / self.length
-            R_right += load.magnitude * L * center / self.length
+            R_left += load.magnitude * w_len * (L - center) / L
+            R_right += load.magnitude * w_len * center / L
 
-        # 计算内力和变形
+        # 使用解析解（Macaulay函数法）计算内力
         for i, xi in enumerate(x):
-            # 剪力
+            # 剪力 V(x) = R_left - Σ P*<x-a>^0 - Σ w*<x-s>^1
             shear[i] = R_left
-
-            # 集中载荷产生的剪力变化
             for load in self.point_loads:
                 if xi > load.position:
                     shear[i] -= load.force
-
-            # 分布载荷产生的剪力变化
             for load in self.distributed_loads:
                 if xi > load.start:
                     end_x = min(xi, load.end)
                     shear[i] -= load.magnitude * (end_x - load.start)
 
-            # 弯矩 (剪力积分)
-            if i > 0:
-                dx = x[i] - x[i-1]
-                moment[i] = moment[i-1] + shear[i] * dx
+            # 弯矩 M(x) = R_left*x - Σ P*<x-a> - Σ w*<x-s>^2/2（解析解）
+            moment[i] = R_left * xi
+            for load in self.point_loads:
+                if xi > load.position:
+                    moment[i] -= load.force * (xi - load.position)
+            for load in self.distributed_loads:
+                if xi > load.start:
+                    end_x = min(xi, load.end)
+                    moment[i] -= load.magnitude * (end_x - load.start) * (xi - (load.start + end_x) / 2)
 
-            # 挠度 (简化计算，只考虑一个集中载荷的情况)
-            if len(self.point_loads) == 1:
-                load = self.point_loads[0]
-                a = load.position
-                P = load.force
-                L = self.length
-
+        # 挠度计算（解析解，支持叠加）
+        for load in self.point_loads:
+            a = load.position
+            b = L - a
+            P = load.force
+            for i, xi in enumerate(x):
                 if xi <= a:
-                    deflection[i] = (P * xi * (L**2 * 3 - 4 * a**2) -
-                                     4 * xi**3) / (24 * E * I * L)
+                    deflection[i] += P * b * xi / (6 * E * I * L) * (L**2 - b**2 - xi**2)
                 else:
-                    b = L - a
-                    deflection[i] = (P * a * (3 * L**2 - 4 * b**2) *
-                                     (L - xi) - (L - xi)**3) / (24 * E * I * L)
+                    deflection[i] += P * a * (L - xi) / (6 * E * I * L) * (2 * L * xi - xi**2 - a**2)
+
+        for load in self.distributed_loads:
+            w = load.magnitude
+            if load.start == 0 and load.end == L:
+                # 全跨均布载荷：δ = w*x*(L^3 - 2*L*x^2 + x^3) / (24*E*I)
+                for i, xi in enumerate(x):
+                    deflection[i] += w * xi * (L**3 - 2 * L * xi**2 + xi**3) / (24 * E * I)
 
         # 计算应力
         stress = moment / self.S
@@ -250,45 +255,75 @@ class CantileverBeam:
         return self
 
     def analyze(self, n_points: int = 100) -> BeamResults:
-        """分析悬臂梁"""
+        """分析悬臂梁（解析解）
+
+        坐标系：x=0 为固定端，x=L 为自由端。
+        使用 Macaulay 函数法直接计算剪力和弯矩，避免数值积分误差。
+        """
         x = np.linspace(0, self.length, n_points)
 
         E = self.material.elastic_modulus
         I = self.I
+        L = self.length
 
         deflection = np.zeros_like(x)
         slope = np.zeros_like(x)
         moment = np.zeros_like(x)
         shear = np.zeros_like(x)
 
-        # 计算每个位置的内力
+        # 计算固定端反力（解析解）
+        R = 0.0   # 固定端竖向反力 (向上为正)
+        M0 = 0.0  # 固定端弯矩 (逆时针为正)
+
+        for load in self.point_loads:
+            R += load.force
+            M0 -= load.force * load.position  # 载荷在 a 处，对固定端弯矩 = -P*a
+
+        for load in self.distributed_loads:
+            w_len = load.end - load.start
+            center = (load.start + load.end) / 2
+            R += load.magnitude * w_len
+            M0 -= load.magnitude * w_len * center
+
+        # 使用解析解计算内力
         for i, xi in enumerate(x):
-            # 剪力
+            # 剪力 V(x) = -R + Σ P*<x-a>^0 + Σ w*<x-s>^1
+            # 符号约定：向下的力产生负剪力（在固定端左侧）
+            shear[i] = -R
             for load in self.point_loads:
                 if xi >= load.position:
                     shear[i] += load.force
-
             for load in self.distributed_loads:
                 if xi >= load.start:
                     end_x = min(xi, load.end)
                     shear[i] += load.magnitude * (end_x - load.start)
 
-            # 弯矩 (从自由端向固定端积分)
-            if i > 0:
-                dx = x[i] - x[i-1]
-                moment[i] = moment[i-1] + shear[i] * dx
+            # 弯矩 M(x) = -M0 - R*x + Σ P*<x-a> + Σ w*<x-s>^2/2（解析解）
+            moment[i] = -M0 - R * xi
+            for load in self.point_loads:
+                if xi >= load.position:
+                    moment[i] += load.force * (xi - load.position)
+            for load in self.distributed_loads:
+                if xi >= load.start:
+                    end_x = min(xi, load.end)
+                    moment[i] += load.magnitude * (end_x - load.start) * (xi - (load.start + end_x) / 2)
 
-        # 计算变形（悬臂梁自由端最大挠度）
-        if len(self.point_loads) == 1:
-            load = self.point_loads[0]
+        # 挠度计算（解析解，支持叠加）
+        for load in self.point_loads:
             a = load.position
             P = load.force
-
             for i, xi in enumerate(x):
                 if xi <= a:
-                    deflection[i] = P * xi ** 2 * (3 * a - xi) / (6 * E * I)
+                    deflection[i] += P * xi**2 * (3 * a - xi) / (6 * E * I)
                 else:
-                    deflection[i] = P * a ** 2 * (3 * xi - a) / (6 * E * I)
+                    deflection[i] += P * a**2 * (3 * xi - a) / (6 * E * I)
+
+        for load in self.distributed_loads:
+            w = load.magnitude
+            if load.start == 0 and load.end == L:
+                # 全跨均布载荷
+                for i, xi in enumerate(x):
+                    deflection[i] += w * xi**2 * (xi**2 + 6 * L**2 - 4 * L * xi) / (24 * E * I)
 
         stress = moment / self.S
         max_stress = np.max(np.abs(stress))

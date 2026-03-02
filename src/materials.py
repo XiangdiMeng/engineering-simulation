@@ -188,8 +188,10 @@ def safety_factor(
         working_stress: 工作应力 (Pa)
 
     Returns:
-        安全系数
+        安全系数，当工作应力为0时返回无穷大
     """
+    if working_stress == 0:
+        return float('inf')
     return material.yield_strength / working_stress
 
 

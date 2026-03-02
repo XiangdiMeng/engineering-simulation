@@ -5,9 +5,10 @@
 import unittest
 import numpy as np
 import sys
-sys.path.insert(0, '../src')
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
-from materials import Material, Steel, Aluminum, Concrete, safety_factor, calculate_stress_strain
+from src.materials import Material, Steel, Aluminum, Concrete, safety_factor, calculate_stress_strain
 
 
 class TestMaterial(unittest.TestCase):
@@ -118,7 +119,7 @@ class TestMaterialFunctions(unittest.TestCase):
         strain = 0.001  # 0.1% 应变
 
         stress = calculate_stress_strain(steel, strain)
-        expected = 200e9 * 0.001
+        expected = steel.elastic_modulus * strain
 
         self.assertAlmostEqual(stress, expected)
 
@@ -128,7 +129,7 @@ class TestMaterialFunctions(unittest.TestCase):
         strains = np.array([0.001, 0.002, 0.003])
 
         stresses = calculate_stress_strain(steel, strains)
-        expected = 200e9 * strains
+        expected = steel.elastic_modulus * strains
 
         np.testing.assert_array_almost_equal(stresses, expected)
 

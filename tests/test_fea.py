@@ -5,9 +5,10 @@
 import unittest
 import numpy as np
 import sys
-sys.path.insert(0, '../src')
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
-from fea import FEModel, TrussElement, FEMaterial, Node
+from src.fea import FEModel, TrussElement, FEMaterial, Node
 
 
 class TestFEMaterial(unittest.TestCase):
@@ -86,7 +87,7 @@ class TestTrussElement(unittest.TestCase):
     def test_local_stiffness_matrix(self):
         """测试局部刚度矩阵"""
         elem = TrussElement(0, 0, 1, self.material)
-        K_local = elem.local_stiffness_matrix(self.nodes)
+        K_local = elem.stiffness_matrix(self.nodes)
 
         self.assertEqual(K_local.shape, (2, 2))
 
@@ -111,8 +112,8 @@ class TestTrussElement(unittest.TestCase):
         """测试应力计算"""
         elem = TrussElement(0, 0, 1, self.material)
 
-        # 模拟拉伸变形
-        displacements = np.array([0.001, 0, 0, 0])  # 节点0移动1mm
+        # 模拟拉伸变形 - 节点1向右移动，节点0固定
+        displacements = np.array([0, 0, 0.001, 0])  # 节点1向右移动1mm
         stress = elem.get_stress(self.nodes, displacements)
 
         # 应该产生拉应力
@@ -200,7 +201,7 @@ class TestTrussStructure(unittest.TestCase):
         # 创建三角形
         model.add_node(0, 0, fixity=(True, True, False))
         model.add_node(1, 0, fixity=(True, True, False))
-        model.add_node(2, 0.5, 1, fixity=(False, False, False), loads=(0, -10000, 0))
+        model.add_node(0.5, 1, fixity=(False, False, False), loads=(0, -10000, 0))
 
         model.add_truss_element(0, 2, material)
         model.add_truss_element(1, 2, material)

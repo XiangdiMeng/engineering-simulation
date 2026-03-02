@@ -650,7 +650,11 @@ class ParametricStructure:
         """分析结构"""
         if self.structure is None:
             self.generate()
-        return self.structure.solve()
+        # FrameStructure uses solve(), TrussStructure uses analyze()
+        if hasattr(self.structure, 'solve'):
+            return self.structure.solve()
+        else:
+            return self.structure.analyze()
 
     def optimize(
         self,
@@ -683,7 +687,11 @@ class ParametricStructure:
         for iteration in range(max_iterations):
             # 生成结构
             structure = self.generate()
-            results = structure.analyze()
+            # FrameStructure uses solve(), TrussStructure uses analyze()
+            if hasattr(structure, 'solve'):
+                results = structure.solve()
+            else:
+                results = structure.analyze()
 
             # 计算目标函数
             weight = self._calculate_weight(structure)
@@ -761,7 +769,7 @@ def verification_cantilever_beam():
     results = frame.solve()
 
     # 比较
-    delta_fem = abs(results.displacements[1])  # 自由端Y位移
+    delta_fem = abs(results.displacements[4])  # 自由端Y位移 (节点1, y方向 = 索引4)
 
     return {
         'analytical': {

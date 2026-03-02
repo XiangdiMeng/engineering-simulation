@@ -10,7 +10,7 @@ from typing import List, Tuple, Dict, Optional
 from enum import Enum
 
 from .materials import Material
-from .fea import Node, FEMaterial
+from .fea import Node
 
 
 class BucklingMode(Enum):

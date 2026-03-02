@@ -309,7 +309,7 @@ print(f"  Stabilizing moment (counterweight): {M_stabilizing/1000:.2f} kN·m")
 print(f"  Total overturning moment: {(M_wind + overhang_moment)/1000:.2f} kN·m")
 
 if M_overturning < 0:
-    print(f"  [PASS) Structure stable against wind")
+    print(f"  [PASS] Structure stable against wind")
 else:
     print(f"  [WARNING] May need additional counterweight")
 print()
@@ -329,7 +329,7 @@ gs = fig.add_gridspec(3, 3, hspace=0.3, wspace=0.3)
 ax1 = fig.add_subplot(gs[0, 0])
 
 # 绘制地面
-ground = Rectangle((-2, -0.1), 5, 0.1, facecolor='lightbrown', edgecolor='brown')
+ground = Rectangle((-2, -0.1), 5, 0.1, facecolor='tan', edgecolor='brown')
 ax1.add_patch(ground)
 
 # 绘制立柱
@@ -659,6 +659,101 @@ print("  [SAVED] results/basketball_hoop_3d.png")
 plt.close()
 
 # ============================================
+# 辅助函数：绘制篮球架结构
+# ============================================
+def draw_hoop_structure(ax, loads='none'):
+    """Draw basketball hoop with specified loads"""
+    from matplotlib.patches import Rectangle, Circle, FancyArrowPatch
+
+    # 立柱
+    pole = Rectangle((-POLE_OUTER_DIAMETER/2, 0), POLE_OUTER_DIAMETER, POLE_HEIGHT,
+                     facecolor='gray', edgecolor='black', linewidth=2)
+    ax.add_patch(pole)
+
+    # 悬臂
+    arm = Rectangle((0, POLE_HEIGHT - ARM_HEIGHT/2), ARM_LENGTH, ARM_HEIGHT,
+                   facecolor='orange', edgecolor='black', linewidth=2)
+    ax.add_patch(arm)
+
+    # 篮板
+    backboard = Rectangle((OVERHANG_LENGTH, POLE_HEIGHT - BACKBOARD_HEIGHT/2),
+                         0.02, BACKBOARD_HEIGHT,
+                         facecolor='white', edgecolor='blue', linewidth=2)
+    ax.add_patch(backboard)
+
+    # 篮圈
+    rim = Circle((OVERHANG_LENGTH + RIM_DIAMETER/2, POLE_HEIGHT - 0.15), RIM_DIAMETER/2,
+                fill=False, edgecolor='red', linewidth=3)
+    ax.add_patch(rim)
+
+    # 地面
+    ground = Rectangle((-1, -0.05), 3, 0.05, facecolor='tan', edgecolor='none')
+    ax.add_patch(ground)
+
+    ax.set_xlim(-1, OVERHANG_LENGTH + 1)
+    ax.set_ylim(-0.5, POLE_HEIGHT + 0.5)
+    ax.set_aspect('equal')
+    ax.grid(True, alpha=0.3)
+
+    # 绘制载荷
+    if loads == 'deadweight':
+        # 自重箭头
+        arrow = FancyArrowPatch((OVERHANG_LENGTH/2, POLE_HEIGHT),
+                              (OVERHANG_LENGTH/2, POLE_HEIGHT - 0.2),
+                              mutation_scale=15, color='green', arrowstyle='->', linewidth=2)
+        ax.add_patch(arrow)
+        ax.text(OVERHANG_LENGTH/2, POLE_HEIGHT - 0.3, f'Dead Load',
+                ha='center', fontsize=10, color='green')
+
+    elif loads == 'dunk':
+        # 冲击载荷
+        arrow = FancyArrowPatch((OVERHANG_LENGTH + RIM_DIAMETER/2, POLE_HEIGHT - 0.15),
+                              (OVERHANG_LENGTH + RIM_DIAMETER/2, POLE_HEIGHT - 0.5),
+                              mutation_scale=20, color='red', arrowstyle='->', linewidth=3)
+        ax.add_patch(arrow)
+        ax.text(OVERHANG_LENGTH + RIM_DIAMETER/2, POLE_HEIGHT - 0.6,
+                f'DUNK!\n{dunk_load/1000:.0f}kN',
+                ha='center', fontsize=10, color='red', fontweight='bold')
+
+    elif loads == 'wind':
+        # 风载
+        y_wind = np.linspace(POLE_HEIGHT - BACKBOARD_HEIGHT/2,
+                           POLE_HEIGHT + BACKBOARD_HEIGHT/2, 5)
+        for yw in y_wind:
+            arrow = FancyArrowPatch((OVERHANG_LENGTH + 0.1, yw),
+                                  (OVERHANG_LENGTH + 0.4, yw),
+                                  mutation_scale=10, color='cyan', arrowstyle='->', linewidth=1.5)
+            ax.add_patch(arrow)
+        ax.text(OVERHANG_LENGTH, POLE_HEIGHT + 0.4, 'Wind Load',
+                ha='center', fontsize=10, color='blue')
+
+    elif loads == 'combined':
+        # 组合载荷
+        arrow1 = FancyArrowPatch((OVERHANG_LENGTH/2, POLE_HEIGHT),
+                               (OVERHANG_LENGTH/2, POLE_HEIGHT - 0.15),
+                               mutation_scale=12, color='green', arrowstyle='->', linewidth=1.5)
+        ax.add_patch(arrow1)
+
+        arrow2 = FancyArrowPatch((OVERHANG_LENGTH + RIM_DIAMETER/2, POLE_HEIGHT - 0.15),
+                               (OVERHANG_LENGTH + RIM_DIAMETER/2, POLE_HEIGHT - 0.4),
+                               mutation_scale=15, color='red', arrowstyle='->', linewidth=2)
+        ax.add_patch(arrow2)
+
+        y_wind = np.linspace(POLE_HEIGHT - 0.3, POLE_HEIGHT + 0.3, 3)
+        for yw in y_wind:
+            arrow3 = FancyArrowPatch((OVERHANG_LENGTH + 0.05, yw),
+                                   (OVERHANG_LENGTH + 0.25, yw),
+                                   mutation_scale=8, color='cyan', arrowstyle='->', linewidth=1)
+            ax.add_patch(arrow3)
+
+        ax.text(OVERHANG_LENGTH/2, POLE_HEIGHT - 0.25, 'DL',
+                ha='center', fontsize=8, color='green')
+        ax.text(OVERHANG_LENGTH + RIM_DIAMETER/2, POLE_HEIGHT - 0.45, 'LL',
+                ha='center', fontsize=8, color='red', fontweight='bold')
+        ax.text(OVERHANG_LENGTH + 0.15, POLE_HEIGHT + 0.4, 'Wind',
+                ha='center', fontsize=8, color='blue')
+
+# ============================================
 # 9. 生成载荷工况图
 # ============================================
 
@@ -766,97 +861,3 @@ with open('results/basketball_hoop_report.txt', 'w', encoding='utf-8') as f:
     f.write(summary)
 
 print("Report saved: results/basketball_hoop_report.txt")
-
-
-# 辅助函数：绘制篮球架结构
-def draw_hoop_structure(ax, loads='none'):
-    """Draw basketball hoop with specified loads"""
-    from matplotlib.patches import Rectangle, Circle, FancyArrowPatch
-
-    # 立柱
-    pole = Rectangle((-POLE_OUTER_DIAMETER/2, 0), POLE_OUTER_DIAMETER, POLE_HEIGHT,
-                     facecolor='gray', edgecolor='black', linewidth=2)
-    ax.add_patch(pole)
-
-    # 悬臂
-    arm = Rectangle((0, POLE_HEIGHT - ARM_HEIGHT/2), ARM_LENGTH, ARM_HEIGHT,
-                   facecolor='orange', edgecolor='black', linewidth=2)
-    ax.add_patch(arm)
-
-    # 篮板
-    backboard = Rectangle((OVERHANG_LENGTH, POLE_HEIGHT - BACKBOARD_HEIGHT/2),
-                         0.02, BACKBOARD_HEIGHT,
-                         facecolor='white', edgecolor='blue', linewidth=2)
-    ax.add_patch(backboard)
-
-    # 篮圈
-    rim = Circle((OVERHANG_LENGTH + RIM_DIAMETER/2, POLE_HEIGHT - 0.15), RIM_DIAMETER/2,
-                fill=False, edgecolor='red', linewidth=3)
-    ax.add_patch(rim)
-
-    # 地面
-    ground = Rectangle((-1, -0.05), 3, 0.05, facecolor='lightbrown', edgecolor='none')
-    ax.add_patch(ground)
-
-    ax.set_xlim(-1, OVERHANG_LENGTH + 1)
-    ax.set_ylim(-0.5, POLE_HEIGHT + 0.5)
-    ax.set_aspect('equal')
-    ax.grid(True, alpha=0.3)
-
-    # 绘制载荷
-    if loads == 'deadweight':
-        # 自重箭头
-        arrow = FancyArrowPatch((OVERHANG_LENGTH/2, POLE_HEIGHT),
-                              (OVERHANG_LENGTH/2, POLE_HEIGHT - 0.2),
-                              mutation_scale=15, color='green', arrowstyle='->', linewidth=2)
-        ax.add_patch(arrow)
-        ax.text(OVERHANG_LENGTH/2, POLE_HEIGHT - 0.3, f'Dead Load',
-                ha='center', fontsize=10, color='green')
-
-    elif loads == 'dunk':
-        # 冲击载荷
-        arrow = FancyArrowPatch((OVERHANG_LENGTH + RIM_DIAMETER/2, POLE_HEIGHT - 0.15),
-                              (OVERHANG_LENGTH + RIM_DIAMETER/2, POLE_HEIGHT - 0.5),
-                              mutation_scale=20, color='red', arrowstyle='->', linewidth=3)
-        ax.add_patch(arrow)
-        ax.text(OVERHANG_LENGTH + RIM_DIAMETER/2, POLE_HEIGHT - 0.6,
-                f'DUNK!\n{dunk_load/1000:.0f}kN',
-                ha='center', fontsize=10, color='red', fontweight='bold')
-
-    elif loads == 'wind':
-        # 风载
-        y_wind = np.linspace(POLE_HEIGHT - BACKBOARD_HEIGHT/2,
-                           POLE_HEIGHT + BACKBOARD_HEIGHT/2, 5)
-        for yw in y_wind:
-            arrow = FancyArrowPatch((OVERHANG_LENGTH + 0.1, yw),
-                                  (OVERHANG_LENGTH + 0.4, yw),
-                                  mutation_scale=10, color='cyan', arrowstyle='->', linewidth=1.5)
-            ax.add_patch(arrow)
-        ax.text(OVERHANG_LENGTH, POLE_HEIGHT + 0.4, 'Wind Load',
-                ha='center', fontsize=10, color='blue')
-
-    elif loads == 'combined':
-        # 组合载荷
-        arrow1 = FancyArrowPatch((OVERHANG_LENGTH/2, POLE_HEIGHT),
-                               (OVERHANG_LENGTH/2, POLE_HEIGHT - 0.15),
-                               mutation_scale=12, color='green', arrowstyle='->', linewidth=1.5)
-        ax.add_patch(arrow1)
-
-        arrow2 = FancyArrowPatch((OVERHANG_LENGTH + RIM_DIAMETER/2, POLE_HEIGHT - 0.15),
-                               (OVERHANG_LENGTH + RIM_DIAMETER/2, POLE_HEIGHT - 0.4),
-                               mutation_scale=15, color='red', arrowstyle='->', linewidth=2)
-        ax.add_patch(arrow2)
-
-        y_wind = np.linspace(POLE_HEIGHT - 0.3, POLE_HEIGHT + 0.3, 3)
-        for yw in y_wind:
-            arrow3 = FancyArrowPatch((OVERHANG_LENGTH + 0.05, yw),
-                                   (OVERHANG_LENGTH + 0.25, yw),
-                                   mutation_scale=8, color='cyan', arrowstyle='->', linewidth=1)
-            ax.add_patch(arrow3)
-
-        ax.text(OVERHANG_LENGTH/2, POLE_HEIGHT - 0.25, 'DL',
-                ha='center', fontsize=8, color='green')
-        ax.text(OVERHANG_LENGTH + RIM_DIAMETER/2, POLE_HEIGHT - 0.45, 'LL',
-                ha='center', fontsize=8, color='red', fontweight='bold')
-        ax.text(OVERHANG_LENGTH + 0.15, POLE_HEIGHT + 0.4, 'Wind',
-                ha='center', fontsize=8, color='blue')
